@@ -8,7 +8,7 @@
     <renderer>
         <component-family>org.apache.myfaces.trinidad.Input</component-family>
         <renderer-type>oracle.adf.rich.Text</renderer-type>
-        <renderer-class>view.PassthroughInputTextRenderer</renderer-class>
+        <renderer-class>view.CustomInputTextRenderer</renderer-class>
     </renderer>
   </render-kit>
 </faces-config>

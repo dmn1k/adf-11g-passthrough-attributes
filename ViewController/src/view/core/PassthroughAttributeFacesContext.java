@@ -1,4 +1,4 @@
-package view;
+package view.core;
 
 import java.util.Iterator;
 
