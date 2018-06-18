@@ -13,7 +13,7 @@
         </af:commandButton>
         <af:inputText label="Label 1" id="it1" placeholder="plc" showRequired="true">
             <f:attribute name="pass(input, textarea):aria-label" value="test" />
-            <f:attribute name="pass(input):data-xy" value="bla" />
+            <f:attribute name="pass(input): data-xy" value="bla" />
             <f:attribute name="pass(textarea,input):data-bla" value="blubb" />
         </af:inputText>
       </af:form>

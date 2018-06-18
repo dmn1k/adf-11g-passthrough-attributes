@@ -2,6 +2,10 @@ package view.core;
 
 import java.io.IOException;
 
+import java.io.Serializable;
+
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -11,10 +15,11 @@ import java.util.regex.Pattern;
 
 import javax.faces.component.UIComponent;
 import javax.faces.context.ResponseWriter;
+import javax.faces.context.ResponseWriterWrapper;
 
-public class PassthroughAttributeResponseWriter extends ResponseWriter {
-    // Example: pass(input,textarea):aria-label
-    private static final Pattern PASS_PATTERN = Pattern.compile("pass\\(([a-zA-Z0-9-,\\s]+)\\):([a-zA-Z0-9-]+)");
+public class PassthroughAttributeResponseWriter extends ResponseWriterWrapper {
+    // Optimierung da wir uns hier im Hot Rendering Path befinden und das Parsen und Allokieren von Strings reduzieren moechten
+    private static final Map<String, PassthroughDefinition> PASSTHROUGH_DEFINITIONS = new ConcurrentHashMap<String, PassthroughDefinition>();
     
     private ResponseWriter underlying;
     
@@ -22,85 +27,70 @@ public class PassthroughAttributeResponseWriter extends ResponseWriter {
         this.underlying = underlying; 
     }
 
+    @Override
     public void startElement(String element, UIComponent uiComponent) throws IOException {
         underlying.startElement(element, uiComponent);
         
         if(uiComponent != null && uiComponent.getAttributes() != null){
             for(Map.Entry<String, Object> entry : uiComponent.getAttributes().entrySet()){
-                Matcher matcher = PASS_PATTERN.matcher(entry.getKey());
-                if(matcher.matches()){
-                    Set<String> relevantElements = toNormalizedElements(matcher.group(1));
-                    if(relevantElements.contains(element.toLowerCase())){
-                        underlying.writeAttribute(matcher.group(2), entry.getValue(), null);
-                    }
+                PassthroughDefinition definition = PASSTHROUGH_DEFINITIONS.get(entry.getKey());
+                if(definition == null){
+                    definition = PassthroughDefinition.parse(entry.getKey());
+                    PASSTHROUGH_DEFINITIONS.put(entry.getKey(), definition);
+                }
+                
+                
+                if(definition.getAppliesToElements().contains(element.toLowerCase())){
+                    underlying.writeAttribute(definition.getAttributeName(), entry.getValue(), null);
                 }
             }
         }
     }
+
+    @Override
+    protected ResponseWriter getWrapped() {
+        return underlying;
+    }
     
-    private static final Set<String> toNormalizedElements(String elementsMatch){
-        Set<String> result = new HashSet<String>();
-        for(String match : elementsMatch.split(",")){
-            result.add(match.toLowerCase().trim());
+    private static class PassthroughDefinition implements Serializable {
+        private static final long serialVersionUID = 1L;
+        
+        // Example: pass(input,textarea):aria-label
+        private static final Pattern PASS_PATTERN = Pattern.compile("pass\\(([a-zA-Z0-9-,\\s]+)\\):([a-zA-Z0-9-\\s]+)");
+        private static final PassthroughDefinition NULL_DEFINITION = new PassthroughDefinition(Collections.<String> emptySet(), "");
+        
+        private Set<String> appliesToElements;
+        private String attributeName;
+        
+        public PassthroughDefinition(Set<String> appliesToElements, String attributeName){
+            this.appliesToElements = appliesToElements;
+            this.attributeName = attributeName;
         }
         
-        return result;
-    }
-    
-    public String getContentType() {
-        return underlying.getContentType();
-    }
-
-    public String getCharacterEncoding() {
-        return underlying.getCharacterEncoding();
-    }
-
-    public void flush() throws IOException {
-        underlying.flush();
-    }
-
-    public void startDocument() throws IOException {
-        underlying.startDocument();
-    }
-
-    public void endDocument() throws IOException {
-        underlying.endDocument();
-    }
-
-    public void endElement(String element) throws IOException {
-        underlying.endElement(element);
-    }
-
-    public void writeAttribute(String name, Object value, String property) throws IOException {
-        underlying.writeAttribute(name, value, property);
-    }
-
-    public void writeURIAttribute(String name, Object value,
-                                  String property) throws IOException {
-        underlying.writeURIAttribute(name, value, property);
-    }
-
-    public void writeComment(Object comment) throws IOException {
-        underlying.writeComment(comment);
-    }
-
-    public void writeText(Object text, String property) throws IOException {
-        underlying.writeText(text, property);
-    }
-
-    public void writeText(char[] text, int off, int len) throws IOException {
-        underlying.writeText(text, off, len);
-    }
-
-    public ResponseWriter cloneWithWriter(java.io.Writer writer) {
-        return underlying.cloneWithWriter(writer);
-    }
-
-    public void write(char[] cbuf, int off, int len) throws IOException {
-        underlying.write(cbuf, off, len);
-    }
-
-    public void close() throws IOException {
-        underlying.close();
+        public static PassthroughDefinition parse(String input){
+            Matcher matcher = PASS_PATTERN.matcher(input);
+            if(matcher.matches()){
+                return new PassthroughDefinition(toNormalizedElements(matcher.group(1)), matcher.group(2).trim());
+            }
+            
+            return NULL_DEFINITION;
+        }
+        
+        private static final Set<String> toNormalizedElements(String elementsMatch){
+            Set<String> result = new HashSet<String>();
+            for(String match : elementsMatch.split(",")){
+                result.add(match.toLowerCase().trim());
+            }
+            
+            return result;
+        }
+        
+        public Set<String> getAppliesToElements(){
+            return appliesToElements;
+        }
+        
+        public String getAttributeName(){
+            return attributeName;
+        }
     }
 }
