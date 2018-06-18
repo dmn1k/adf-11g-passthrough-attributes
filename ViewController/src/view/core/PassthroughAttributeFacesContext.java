@@ -13,15 +13,18 @@ import javax.faces.render.RenderKit;
 
 public class PassthroughAttributeFacesContext extends FacesContext {
     private FacesContext underlying;
-    private String[] relevantPassthroughElements;
     
-    public PassthroughAttributeFacesContext(FacesContext underlying, String... relevantPassthroughElements) {
+    public PassthroughAttributeFacesContext(FacesContext underlying) {
         this.underlying = underlying;
-        this.relevantPassthroughElements = relevantPassthroughElements;
     }
     
     public ResponseWriter getResponseWriter() {
-        return new PassthroughAttributeResponseWriter(underlying.getResponseWriter(), this.relevantPassthroughElements);
+        ResponseWriter responseWriter = underlying.getResponseWriter();
+        if(responseWriter instanceof PassthroughAttributeResponseWriter){
+            return responseWriter;
+        }
+        
+        return new PassthroughAttributeResponseWriter(responseWriter);
     }
 
     public Application getApplication() {

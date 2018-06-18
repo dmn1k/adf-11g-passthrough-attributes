@@ -9,11 +9,9 @@ import javax.faces.render.Renderer;
 
 public class PassthroughAttributeRendererWrapper extends Renderer {
     private Renderer underlying;
-    private String[] relevantPassthroughElements;
     
-    public PassthroughAttributeRendererWrapper(Renderer underlying, String... relevantPassthroughElements){
+    public PassthroughAttributeRendererWrapper(Renderer underlying){
         this.underlying = underlying;
-        this.relevantPassthroughElements = relevantPassthroughElements;
     }
 
     @Override
@@ -57,6 +55,10 @@ public class PassthroughAttributeRendererWrapper extends Renderer {
     }
     
     private FacesContext wrap(FacesContext ctx){
-        return new PassthroughAttributeFacesContext(ctx, relevantPassthroughElements);
+        if(ctx instanceof PassthroughAttributeFacesContext){
+            return ctx;
+        }
+        
+        return new PassthroughAttributeFacesContext(ctx);
     }
 }

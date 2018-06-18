@@ -2,36 +2,49 @@ package view.core;
 
 import java.io.IOException;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.faces.component.UIComponent;
 import javax.faces.context.ResponseWriter;
 
 public class PassthroughAttributeResponseWriter extends ResponseWriter {
-    private ResponseWriter underlying;
-    private Set<String> relevantPassthroughElements = new HashSet<String>();
+    // Example: pass(input,textarea):aria-label
+    private static final Pattern PASS_PATTERN = Pattern.compile("pass\\(([a-zA-Z0-9-,\\s]+)\\):([a-zA-Z0-9-]+)");
     
-    public PassthroughAttributeResponseWriter(ResponseWriter underlying, String... relevantPassthroughElements) {
+    private ResponseWriter underlying;
+    
+    public PassthroughAttributeResponseWriter(ResponseWriter underlying) {
         this.underlying = underlying; 
-        for(String element : relevantPassthroughElements){
-            this.relevantPassthroughElements.add(element.toLowerCase());
-        }
     }
 
     public void startElement(String element, UIComponent uiComponent) throws IOException {
         underlying.startElement(element, uiComponent);
         
-        if(this.relevantPassthroughElements.contains(element.toLowerCase())){
+        if(uiComponent != null && uiComponent.getAttributes() != null){
             for(Map.Entry<String, Object> entry : uiComponent.getAttributes().entrySet()){
-                if(entry.getKey().startsWith("pass-")){
-                    underlying.writeAttribute(entry.getKey().substring(5), entry.getValue(), null);
+                Matcher matcher = PASS_PATTERN.matcher(entry.getKey());
+                if(matcher.matches()){
+                    Set<String> relevantElements = toNormalizedElements(matcher.group(1));
+                    if(relevantElements.contains(element.toLowerCase())){
+                        underlying.writeAttribute(matcher.group(2), entry.getValue(), null);
+                    }
                 }
             }
         }
+    }
+    
+    private static final Set<String> toNormalizedElements(String elementsMatch){
+        Set<String> result = new HashSet<String>();
+        for(String match : elementsMatch.split(",")){
+            result.add(match.toLowerCase().trim());
+        }
+        
+        return result;
     }
     
     public String getContentType() {

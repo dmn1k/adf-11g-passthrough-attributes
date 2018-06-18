@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <faces-config version="1.2" xmlns="http://java.sun.com/xml/ns/javaee">
   <application>
-    <default-render-kit-id>oracle.adf.rich</default-render-kit-id>
+    <default-render-kit-id>com.github.dmn1k.custom</default-render-kit-id>
   </application>
   <render-kit>
-    <render-kit-id>oracle.adf.rich</render-kit-id>
-    <renderer>
-        <component-family>org.apache.myfaces.trinidad.Input</component-family>
-        <renderer-type>oracle.adf.rich.Text</renderer-type>
-        <renderer-class>view.CustomInputTextRenderer</renderer-class>
-    </renderer>
+    <render-kit-id>com.github.dmn1k.custom</render-kit-id>
+    <render-kit-class>view.core.CustomRenderKit</render-kit-class>
   </render-kit>
 </faces-config>
