@@ -1,21 +1,22 @@
 package view.core;
 
-import javax.faces.render.Renderer;
+import javax.faces.context.ResponseWriter;
 
 import oracle.adfinternal.view.faces.renderkit.rich.RichRenderKit;
 
 public class CustomRenderKit extends RichRenderKit {
     @Override
-    public Renderer getRenderer(String family, String type) {
-        Renderer renderer = super.getRenderer(family, type);
-        if(renderer == null){
+    protected ResponseWriter createDecoratedResponseWriter(ResponseWriter delegate) {
+        ResponseWriter writer = super.createDecoratedResponseWriter(delegate);
+        
+        if(writer == null){
             return null;
         }
         
-        if(renderer instanceof PassthroughAttributeRendererWrapper){
-            return renderer;
+        if(writer instanceof PassthroughAttributeResponseWriter){
+            return writer;
         }
         
-        return new PassthroughAttributeRendererWrapper(renderer);
+        return new PassthroughAttributeResponseWriter(writer);
     }
 }
